@@ -6,7 +6,7 @@ pipeline {
             agent { label 'built-in' }
             steps {
                 echo 'Descargando código de la rama develop'
-                git branch: 'develop', url: 'https://github.com/guiurm/unir-cp1-4.git'
+                git branch: 'develop', url: 'git@github.com:guiurm/unir-cp1-4.git'
                 stash name: 'codigo', includes: '**'
             }
         }
