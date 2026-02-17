@@ -200,3 +200,13 @@ class TestApi(unittest.TestCase):
         )
         print('End - integration test Delete TODO')
     
+    @pytest.mark.readonly
+    def test_api_listtodos_readonly(self):
+        print('---------------------------------------')
+        print('Starting - integration test List TODO (readonly)')
+        url = BASE_URL + "/todos"
+        response = requests.get(url)
+        print('Response List Todo: ' + str(response.json()))
+        self.assertEqual(response.status_code, 200, "Error en la petición API a {url}")
+        self.assertIsInstance(response.json(), list)
+        print('End - integration test List TODO (readonly)')
