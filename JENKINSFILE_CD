@@ -1,52 +1,55 @@
 pipeline {
-    agent any
+    agent none
 
     stages {
         stage('Get Code') {
+            agent { label 'built-in' }
             steps {
                 echo 'Descargando código de la rama master'
                 git branch: 'master', url: 'https://github.com/guiurm/unir-cp1-4.git'
+                stash name: 'codigo', includes: '**'
             }
         }
 
         stage('Deploy') {
+            agent { label 'built-in' }
             steps {
+                unstash 'codigo'
                 echo 'Construyendo y desplegando en entorno Production'
                 sh '''#!/bin/bash
                     set -x
                     sam validate --region us-east-1
                     sam build
-                    export ENVIRONMENT=production
-                    sam deploy template.yaml --config-env ${ENVIRONMENT} --no-confirm-changeset --force-upload --no-fail-on-empty-changeset --no-progressbar
+                    sam deploy template.yaml --config-env production --no-confirm-changeset --force-upload --no-fail-on-empty-changeset --no-progressbar
                 '''
+                script {
+                    env.BASE_URL = sh(
+                        script: "aws cloudformation describe-stacks --stack-name todo-list-aws-production --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
+                        returnStdout: true
+                    ).trim()
+                    echo "BASE_URL obtenida: ${env.BASE_URL}"
+                }
             }
         }
 
         stage('Rest Test') {
+            agent { label 'agent-02' }
             steps {
-                script {
-                    echo 'Obteniendo URL de la API desplegada'
-                    def BASE_URL = sh(
-                        script: "aws cloudformation describe-stacks --stack-name todo-list-aws-production --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
-                        returnStdout: true
-                    ).trim()
-
-                    echo "BASE_URL obtenida: ${BASE_URL}"
-
-                    sh """#!/bin/bash
-                        set -x
-                        export BASE_URL=${BASE_URL}
-                        pytest -s test/integration/todoApiTest.py -m "readonly"
-                    """
-                }
+                unstash 'codigo'
+                sh """#!/bin/bash
+                    set -x
+                    export BASE_URL=${env.BASE_URL}
+                    pytest -s test/integration/todoApiTest.py -m "readonly"
+                """
             }
         }
     }
 
     post {
         always {
-            echo 'Limpiando workspace'
-            cleanWs()
+            node('built-in') {
+                cleanWs()
+            }
         }
     }
 }

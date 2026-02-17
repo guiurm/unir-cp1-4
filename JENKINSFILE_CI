@@ -1,16 +1,20 @@
 pipeline {
-    agent any
+    agent none
 
     stages {
         stage('Get Code') {
+            agent { label 'built-in' }
             steps {
                 echo 'Descargando código de la rama develop'
                 git branch: 'develop', url: 'https://github.com/guiurm/unir-cp1-4.git'
+                stash name: 'codigo', includes: '**'
             }
         }
 
         stage('Static Test') {
+            agent { label 'agent-01' }
             steps {
+                unstash 'codigo'
                 echo 'Ejecutando análisis estático con Flake8 y Bandit'
                 sh '''#!/bin/bash
                     set -x
@@ -38,60 +42,65 @@ pipeline {
         }
 
         stage('Deploy') {
+            agent { label 'built-in' }
             steps {
+                unstash 'codigo'
                 echo 'Construyendo y desplegando en entorno Staging'
                 sh '''#!/bin/bash
                     set -x
                     sam validate --region us-east-1
                     sam build
-                    export ENVIRONMENT=staging
-                    sam deploy template.yaml --config-env ${ENVIRONMENT} --no-confirm-changeset --force-upload --no-fail-on-empty-changeset --no-progressbar
+                    sam deploy template.yaml --config-env staging --no-confirm-changeset --force-upload --no-fail-on-empty-changeset --no-progressbar
                 '''
-            }
-        }
-
-        stage('Rest Test') {
-            steps {
                 script {
-                    echo 'Obteniendo URL de la API desplegada'
-                    def BASE_URL = sh(
+                    env.BASE_URL = sh(
                         script: "aws cloudformation describe-stacks --stack-name todo-list-aws-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
                         returnStdout: true
                     ).trim()
-
-                    echo "BASE_URL obtenida: ${BASE_URL}"
-
-                    sh """#!/bin/bash
-                        set -x
-                        export BASE_URL=${BASE_URL}
-                        pytest -s test/integration/todoApiTest.py
-                    """
+                    echo "BASE_URL obtenida: ${env.BASE_URL}"
                 }
             }
         }
 
+        stage('Rest Test') {
+            agent { label 'agent-02' }
+            steps {
+                unstash 'codigo'
+                sh """#!/bin/bash
+                    set -x
+                    export BASE_URL=${env.BASE_URL}
+                    pytest -s test/integration/todoApiTest.py
+                """
+            }
+        }
+
         stage('Promote') {
+            agent { label 'built-in' }
             steps {
                 echo 'Haciendo merge a master'
-                // sshagent(['github']) {
-                //     sh '''#!/bin/bash
-                //         set -x
-                //         git config user.name "Jenkins"
-                //         git config user.email "jenkins@example.com"
-                //         git fetch origin
-                //         git checkout master
-                //         git merge develop -m "Merge develop to master - Release approved"
-                //         git push origin master
-                //     '''
-                // }
+                sshagent(['github']) {
+                    sh '''#!/bin/bash
+                        set -x
+                        git config user.name "Jenkins"
+                        git config user.email "jenkins@example.com"
+                        git fetch origin
+                        git checkout master
+                        git merge develop --no-commit --no-ff
+                        git reset HEAD Jenkinsfile_agentes
+                        git checkout -- Jenkinsfile_agentes
+                        git commit -m "Merge develop to master - Release approved"
+                        git push origin master
+                    '''
+                }
             }
         }
     }
 
     post {
         always {
-            echo 'Limpiando workspace'
-            cleanWs()
+            node('built-in') {
+                cleanWs()
+            }
         }
     }
 }

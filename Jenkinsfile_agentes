@@ -1,0 +1,86 @@
+// pipeline {
+//     agent none
+
+//     stages {
+//         stage('Get Code') {
+//             agent { label 'built-in' }
+//             steps {
+//                 echo 'Descargando código de la rama develop'
+//                 git branch: 'develop', url: 'https://github.com/guiurm/unir-cp1-4.git'
+//                 stash name: 'codigo', includes: '**'
+//             }
+//         }
+
+//         stage('Static Test') {
+//             agent { label 'agent-01' }
+//             steps {
+//                 unstash 'codigo'
+//                 sh '''#!/bin/bash
+//                     set -x
+//                     flake8 --exit-zero --format=pylint src/ > flake8.out
+//                     bandit --exit-zero -r src/ -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}]{msg}"
+//                 '''
+//             }
+//             post {
+//                 always {
+//                     recordIssues(
+//                         tools: [
+//                             flake8(pattern: 'flake8.out'),
+//                             pyLint(name: 'Bandit', pattern: 'bandit.out')
+//                         ],
+//                         enabledForFailure: true
+//                     )
+//                 }
+//             }
+//         }
+
+//         stage('Deploy') {
+//             agent { label 'built-in' }
+//             steps {
+//                 unstash 'codigo'
+//                 sh '''#!/bin/bash
+//                     set -x
+//                     sam validate --region us-east-1
+//                     sam build
+//                     sam deploy template.yaml --config-env staging --no-confirm-changeset --force-upload --no-fail-on-empty-changeset --no-progressbar
+//                 '''
+//                 script {
+//                     env.BASE_URL = sh(
+//                         script: "aws cloudformation describe-stacks --stack-name todo-list-aws-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
+//                         returnStdout: true
+//                     ).trim()
+//                     echo "BASE_URL: ${env.BASE_URL}"
+//                 }
+//             }
+//         }
+
+//         stage('Rest Test') {
+//             agent { label 'agent-02' }
+//             steps {
+//                 unstash 'codigo'
+//                 sh """#!/bin/bash
+//                     set -x
+//                     export BASE_URL=${env.BASE_URL}
+//                     pytest -s test/integration/todoApiTest.py
+//                 """
+//             }
+//         }
+
+//         stage('Promote') {
+//             agent { label 'built-in' }
+//             steps {
+//                 echo 'Haciendo merge a master'
+//             }
+//         }
+//     }
+
+//     post {
+//         always {
+//             node('built-in') {
+//                 cleanWs()
+//             }
+//         }
+//     }
+// }
+
+test
