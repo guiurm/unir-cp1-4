@@ -7,6 +7,10 @@ pipeline {
             steps {
                 echo 'Descargando código de la rama develop'
                 git branch: 'develop', url: 'git@github.com:guiurm/unir-cp1-4.git'
+                sh '''#!/bin/bash
+                    set -x
+                    curl -o samconfig.toml https://raw.githubusercontent.com/guiurm/todo-list-aws-config/refs/heads/staging/samconfig.toml
+                '''
                 stash name: 'codigo', includes: '**'
             }
         }
