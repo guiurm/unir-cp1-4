@@ -85,8 +85,8 @@ pipeline {
                 sshagent(['github']) {
                     sh '''#!/bin/bash
                         set -x
-                        git config user.name "Jenkins"
-                        git config user.email "jenkins@example.com"
+                        git config user.name "guiurm"
+                        git config user.email "guiurm@gmail.com"
                         git fetch origin
                         git checkout -b master origin/master
                         git merge develop --no-commit --no-ff
