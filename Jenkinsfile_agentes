@@ -87,9 +87,9 @@ pipeline {
                         set -x
                         git config user.name "Jenkins"
                         git config user.email "jenkins@example.com"
+                        git remote set-url origin git@github.com:guiurm/unir-cp1-4.git   # <-- forzar SSH
                         git fetch origin
-                        rm -f samconfig.toml
-                        git switch master
+                        git checkout -b master origin/master
                         git merge develop --no-commit --no-ff
                         git reset HEAD Jenkinsfile_agentes
                         git checkout -- Jenkinsfile_agentes
