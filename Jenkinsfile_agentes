@@ -88,7 +88,7 @@ pipeline {
                         git config user.name "Jenkins"
                         git config user.email "jenkins@example.com"
                         git fetch origin
-                        git checkout master
+                        git checkout -b master origin/master
                         git merge develop --no-commit --no-ff
                         git reset HEAD Jenkinsfile_agentes
                         git checkout -- Jenkinsfile_agentes
