@@ -9,7 +9,7 @@ pipeline {
                 git branch: 'master', url: 'https://github.com/guiurm/unir-cp1-4.git'
                 sh '''#!/bin/bash
                     set -x
-                    curl -o samconfig.toml https://raw.githubusercontent.com/guiurm/todo-list-aws-config/refs/heads/staging/samconfig.toml
+                    curl -o samconfig.toml https://raw.githubusercontent.com/guiurm/todo-list-aws-config/refs/heads/production/samconfig.toml
                 '''
                 stash name: 'codigo', includes: '**'
             }
