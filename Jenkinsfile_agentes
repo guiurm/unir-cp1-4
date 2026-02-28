@@ -89,7 +89,7 @@ pipeline {
                         git config user.email "jenkins@example.com"
                         git fetch origin
                         rm -f samconfig.toml
-                        git checkout origin/master
+                        git switch master
                         git merge develop --no-commit --no-ff
                         git reset HEAD Jenkinsfile_agentes
                         git checkout -- Jenkinsfile_agentes
