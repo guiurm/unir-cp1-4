@@ -9,6 +9,9 @@ pipeline {
                 git branch: 'develop', url: 'git@github.com:guiurm/unir-cp1-4.git'
                 sh '''#!/bin/bash
                     set -x
+                    echo "INFO: ejecutando en agente (Get Code)"
+                    whoami
+                    hostname
                     curl -o samconfig.toml https://raw.githubusercontent.com/guiurm/todo-list-aws-config/refs/heads/staging/samconfig.toml
                 '''
                 stash name: 'codigo', includes: '**'
@@ -22,6 +25,9 @@ pipeline {
                 echo 'Ejecutando análisis estático con Flake8 y Bandit'
                 sh '''#!/bin/bash
                     set -x
+                    echo "INFO: ejecutando en agente (Static Test)"
+                    whoami
+                    hostname
 
                     echo "=== Ejecutando Flake8 en src/ ==="
                     flake8 --exit-zero --format=pylint src/ > flake8.out
@@ -52,6 +58,9 @@ pipeline {
                 echo 'Construyendo y desplegando en entorno Staging'
                 sh '''#!/bin/bash
                     set -x
+                    echo "INFO: ejecutando en agente (Deploy)"
+                    whoami
+                    hostname
                     sam validate --region us-east-1
                     sam build
                     sam deploy template.yaml --config-env staging --no-confirm-changeset --force-upload --no-fail-on-empty-changeset --no-progressbar
@@ -72,6 +81,9 @@ pipeline {
                 unstash 'codigo'
                 sh """#!/bin/bash
                     set -x
+                    echo "INFO: ejecutando en agente (Rest Test)"
+                    whoami
+                    hostname
                     export BASE_URL=${env.BASE_URL}
                     pytest -s test/integration/todoApiTest.py
                 """
@@ -85,6 +97,9 @@ pipeline {
                 sshagent(['github']) {
                     sh '''#!/bin/bash
                         set -x
+                        echo "INFO: ejecutando en agente (Promote)"
+                        whoami
+                        hostname
                         git config user.name "Jenkins"
                         git config user.email "jenkins@example.com"
                         git remote set-url origin git@github.com:guiurm/unir-cp1-4.git   # <-- forzar SSH
