@@ -9,6 +9,9 @@ pipeline {
                 git branch: 'master', url: 'https://github.com/guiurm/unir-cp1-4.git'
                 sh '''#!/bin/bash
                     set -x
+                    echo "INFO: ejecutando en agente (Get Code)"
+                    whoami
+                    hostname
                     curl -o samconfig.toml https://raw.githubusercontent.com/guiurm/todo-list-aws-config/refs/heads/production/samconfig.toml
                 '''
                 stash name: 'codigo', includes: '**'
@@ -22,6 +25,9 @@ pipeline {
                 echo 'Construyendo y desplegando en entorno Production'
                 sh '''#!/bin/bash
                     set -x
+                    echo "INFO: ejecutando en agente (Deploy)"
+                    whoami
+                    hostname
                     sam validate --region us-east-1
                     sam build
                     sam deploy template.yaml --config-env production --no-confirm-changeset --force-upload --no-fail-on-empty-changeset --no-progressbar
@@ -42,6 +48,9 @@ pipeline {
                 unstash 'codigo'
                 sh """#!/bin/bash
                     set -x
+                    echo "INFO: ejecutando en agente (Rest Test)"
+                    whoami
+                    hostname
                     export BASE_URL=${env.BASE_URL}
                     pytest -s test/integration/todoApiTest.py -m "readonly"
                 """
